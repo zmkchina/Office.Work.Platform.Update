@@ -22,36 +22,48 @@ namespace Office.Work.Platform.Update
             InitializeComponent();
 
         }
-        private async void MainWin_Load(object sender, System.EventArgs e)
+        private void MainWin_Load(object sender, System.EventArgs e)
+        {
+
+        }
+
+        private async void btnUpdate_Click(object sender, EventArgs e)
         {
             string localFileName = Path.Combine(Application.StartupPath, "LocalUpdate.zgk");
             List<string> NeedUpdateFiles = DataRWLocalFileRepository.ReadObjFromFile<List<string>>(localFileName);
 
-            await Task.Run(() =>
+            if (NeedUpdateFiles != null && NeedUpdateFiles.Count > 0)
             {
-                foreach (string item in NeedUpdateFiles)
+                await Task.Run(() =>
                 {
-                    ProgressMessageHandler progress = new System.Net.Http.Handlers.ProgressMessageHandler();
-                    progress.HttpReceiveProgress += (object sender, System.Net.Http.Handlers.HttpProgressEventArgs e) =>
+                    foreach (string item in NeedUpdateFiles)
                     {
-                        this.prgBar.Value = e.ProgressPercentage;// (double)(e.BytesTransferred / e.TotalBytes) * 100;
+                        ProgressMessageHandler progress = new System.Net.Http.Handlers.ProgressMessageHandler();
+                        progress.HttpReceiveProgress += (object sender, System.Net.Http.Handlers.HttpProgressEventArgs e) =>
+                        {
+                            this.prgBar.Value = e.ProgressPercentage;// (double)(e.BytesTransferred / e.TotalBytes) * 100;
                     };
-                    DataFileRepository.DownloadFile(item, progress);
-                }
-            });
-            if (MessageBox.Show("升级完毕，要运行主程序吗？", "完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                string updateProgram = Path.Combine(Application.StartupPath, "Office.Work.Platform.exe");
-                if (File.Exists(updateProgram))
+                        DataFileRepository.DownloadFile(item, progress);
+                    }
+                });
+                if (MessageBox.Show("升级完毕，要运行主程序吗？", "完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    System.Diagnostics.Process.Start(updateProgram);
+                    string updateProgram = Path.Combine(Application.StartupPath, "Office.Work.Platform.exe");
+                    if (File.Exists(updateProgram))
+                    {
+                        System.Diagnostics.Process.Start(updateProgram);
+                    }
+                    Application.Exit();
                 }
             }
-            Application.Exit();
+            else
+            {
+                MessageBox.Show("未找到要升级的列表文件？", "警告", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            }
         }
         private void btnClose_Click(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Application.Exit();
         }
     }
 }
